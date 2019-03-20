@@ -1,11 +1,11 @@
 #import RPi.GPIO as GPIO
 from urllib.request import urlopen, Request
 import requests
-#import json, time
+import json, time
 
-#PIN = 21
-#GPIO.setmode(GPIO.BCM)
-#GPIO.setup(PIN, GPIO.OUT)
+PIN = 21
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(PIN, GPIO.OUT)
 while True:
     try:
         request = Request('https://api.thingspeak.com/talkbacks/31641/commands/execute?api_key=NU6M3B6JB1Q3IR76')
