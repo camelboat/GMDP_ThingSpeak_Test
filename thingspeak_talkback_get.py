@@ -8,26 +8,25 @@ PIN = 21
 #GPIO.setup(PIN, GPIO.OUT)
 
 current_temperature_setting = 20
+wating_status = 0
 
 def decode_light(command):
-    print(command)
     if command == "00":
         print("light off")
+        #GPIO.output(PIN, GPIO.LOW)
     elif command == "01":
         print("light on")
+        #GPIO.output(PIN, GPIO.HIGH)
     else:
         print("invalid light instruction")
 
 def decode_ac(command):
-    if command == "00":
+    if command == "000":
         print("air-conditioner off")
-    elif command == "01":
+    elif command == "010":
         print("air-conditioner on")
-    elif command == "10":
-        current_temperature_setting -= 1
-        print("temperature setting is changed to: ", current_temperature_setting)
-    elif command == "11":
-        current_temperature_setting += 1
+    elif command[0] == "1":
+        current_temperature_setting = int(command[1:3])
         print("temperature setting is changed to: ", current_temperature_setting)
     else:
         print("invalid AC instruction")
@@ -44,27 +43,33 @@ while True:
                      1 - air-conditioner
         000: light off
         001: light on
-        100: air-conditioner off
-        101: air-conditioner on
-        110: air-conditioner decrease 1 degree
-        111: air-conditioner increase 1 degree
+        1000: air-conditioner off
+        1010: air-conditioner on
+        11xx: air-conditioner set to xx degrees
         '''
-        print(command)
         if not command:
-            print("no instruction")
-        elif command[0] == '0':
-            decode_light(command[1:3])
+            if wating_status == 0:
+                wating_status = 1
+                print("waiting for commands...")
+                pass
+            else:
+                pass
+        else:
+            wating_status = 0
+            if command[0] == '0':
+                decode_light(command[1:3])
 
-        elif command[0] == '1':
-            decode_ac(command[1:3])
+            elif command[0] == '1':
+                decode_ac(command[1:4])
         #if command == '1':
         #    print("light on")
         #    #GPIO.output(PIN, GPIO.HIGH)
         #elif command == '0':
         #    print("light off")
         #    #GPIO.output(PIN, GPIO.LOW)
-        else:
-            print("invalid instruction")
+
+            else:
+                print("invalid instruction")
     except KeyboardInterrupt:
         #GPIO.output(PIN, GPIO.LOW)
         print("\nExit because user interrupt")
