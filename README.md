@@ -11,4 +11,7 @@ Add a new command to talkback App
 ## thingspeak_talkback_get.py
 Read and execute commands from the queue in talkback App
 
+Future work:
+1. light running / off time uploading to ThingSpeak channels
+
 

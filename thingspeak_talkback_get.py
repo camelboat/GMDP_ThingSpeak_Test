@@ -8,23 +8,50 @@ PIN = 21
 #GPIO.setmode(GPIO.BCM)
 #GPIO.setup(PIN, GPIO.OUT)
 
+light_1_initialize_flag = 0
+
 current_temperature_setting = 20
 wating_status = 0
 
 light_1_running = 0
+light_1_not_running = 0
 light_1_start = 0
 light_1_off = 0
 
+light_1_time_upload_last = time.time()
+light_1_time_upload_now = time.time()
+
 light_1_status = 0
 
+def uploading_light_running_time():
+    global light_1_time_upload_now
+    global light_1_time_upload_last
+    light_1_time_upload_now = time.time()
+    if (light_1_time_upload_now - light_1_time_upload_last) > 15:
+        print('uploading')
+        light_1_time_upload_last = light_1_time_upload_now
+    else:
+        print('not uploading because of the limitation of ThingSpeak')
 
 def open_light():
     global light_1_start
+    global light_1_off
     global light_1_status
-    light_1_status = 1
-    #GPIO.output(PIN, GPIO.HIGH)
-    print("light on")
-    light_1_start = time.time()
+    global light_1_not_running
+    global light_1_initialize_flag
+    if light_1_status == 1:
+        print("light is already on, do nothing")
+    else:
+        light_1_status = 1
+        #GPIO.output(PIN, GPIO.HIGH)
+        print("light on")
+        light_1_start = time.time()
+        if light_1_initialize_flag == 0:
+            light_1_initialize_flag = 1
+            light_1_off = light_1_start
+        light_1_not_running += (light_1_start - light_1_off)
+        print('light #1\'s total off time is ' + str(round(light_1_not_running)) + ' seconds')
+        uploading_light_running_time()
 
 def close_light():
     global light_1_running
@@ -39,9 +66,8 @@ def close_light():
         light_1_status = 0
         light_1_off = time.time()
         light_1_running += (light_1_off - light_1_start)
-        light_1_start = 0
-        light_1_off = 0
         print('light #1\'s total on time is '  + str(round(light_1_running)) + ' seconds')
+        uploading_light_running_time()
 
 def decode_light(command):
     if command == "00":
@@ -96,6 +122,16 @@ while True:
             else:
                 print("invalid instruction")
     except KeyboardInterrupt:
-        #GPIO.output(PIN, GPIO.LOW)
         print("\nExit because user interrupt")
+        if light_1_status == 1:
+            #GPIO.output(PIN, GPIO.LOW)
+            print("light off")
+            light_1_status = 0
+            light_1_off = time.time()
+            light_1_running += (light_1_off - light_1_start)
+        else:
+            light_1_not_running += (time.time() - light_1_off)
+        print("Info Summary:")
+        print('light #1\'s total on time is '  + str(round(light_1_running)) + ' seconds')
+        print('light #1\'s total off time is '  + str(round(light_1_not_running)) + ' seconds')
         break
