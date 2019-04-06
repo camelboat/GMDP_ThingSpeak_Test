@@ -4,14 +4,16 @@ import requests
 import json, time
 
 # variables initialization
+# Light pin assignment
 PIN = 21
 #GPIO.setmode(GPIO.BCM)
 #GPIO.setup(PIN, GPIO.OUT)
 
+# light 1 related variables
 light_1_initialize_flag = 0
 
 current_temperature_setting = 20
-wating_status = 0
+waiting_status = 0
 
 light_1_running = 0
 light_1_not_running = 0
@@ -23,15 +25,45 @@ light_1_time_upload_now = time.time()
 
 light_1_status = 0
 
+# uploading related variables
+baseURL_light_running = 'https://api.thingspeak.com/update?api_key=ZXYPJWBZXNHXGSZB&field1=0'
+baseURL_light_off = 'https://api.thingspeak.com/update?api_key=ZXYPJWBZXNHXGSZB&field2=0'
+
+
 def uploading_light_running_time():
     global light_1_time_upload_now
     global light_1_time_upload_last
+    global light_1_running
+    global baseURL_light_running
+    light_1_time_upload_now = time.time()
+
+    if (light_1_time_upload_now - light_1_time_upload_last) > 15:
+        print('uploading')
+        f = requests.get(baseURL_light_running + str(light_1_running))
+        print(f.content)
+        print('uploading succeed')
+        light_1_time_upload_last = light_1_time_upload_now
+        light_1_running = 0
+    else:
+        print('not uploading because of the limitation of ThingSpeak')
+
+
+def uploading_light_off_time():
+    global light_1_time_upload_now
+    global light_1_time_upload_last
+    global light_1_not_running
+    global baseURL_light_off
     light_1_time_upload_now = time.time()
     if (light_1_time_upload_now - light_1_time_upload_last) > 15:
         print('uploading')
+        f = requests.get(baseURL_light_off + str(light_1_not_running))
+        print(f.content)
+        print('uploading succeed')
         light_1_time_upload_last = light_1_time_upload_now
+        light_1_not_running = 0
     else:
         print('not uploading because of the limitation of ThingSpeak')
+
 
 def open_light():
     global light_1_start
@@ -51,7 +83,8 @@ def open_light():
             light_1_off = light_1_start
         light_1_not_running += (light_1_start - light_1_off)
         print('light #1\'s total off time is ' + str(round(light_1_not_running)) + ' seconds')
-        uploading_light_running_time()
+        uploading_light_off_time()
+
 
 def close_light():
     global light_1_running
@@ -69,6 +102,7 @@ def close_light():
         print('light #1\'s total on time is '  + str(round(light_1_running)) + ' seconds')
         uploading_light_running_time()
 
+
 def decode_light(command):
     if command == "00":
         close_light()
@@ -76,6 +110,7 @@ def decode_light(command):
         open_light()
     else:
         print("invalid light instruction")
+
 
 def decode_ac(command):
     if command == "000":
@@ -87,6 +122,7 @@ def decode_ac(command):
         print("temperature setting is changed to: ", current_temperature_setting)
     else:
         print("invalid AC instruction")
+
 
 while True:
     try:
@@ -105,14 +141,14 @@ while True:
         11xx: air-conditioner set to xx degrees
         '''
         if not command:
-            if wating_status == 0:
-                wating_status = 1
+            if waiting_status == 0:
+                waiting_status = 1
                 print("waiting for commands...")
                 pass
             else:
                 pass
         else:
-            wating_status = 0
+            waiting_status = 0
             if command[0] == '0':
                 decode_light(command[1:3])
 
@@ -131,7 +167,12 @@ while True:
             light_1_running += (light_1_off - light_1_start)
         else:
             light_1_not_running += (time.time() - light_1_off)
+        uploading_light_running_time()
+        uploading_light_off_time()
+
+        '''
         print("Info Summary:")
-        print('light #1\'s total on time is '  + str(round(light_1_running)) + ' seconds')
-        print('light #1\'s total off time is '  + str(round(light_1_not_running)) + ' seconds')
+        print('light #1\'s total on time is ' + str(round(light_1_running)) + ' seconds')
+        print('light #1\'s total off time is ' + str(round(light_1_not_running)) + ' seconds')
+        '''
         break
