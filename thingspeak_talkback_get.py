@@ -10,6 +10,8 @@ PIN = 21
 current_temperature_setting = 20
 wating_status = 0
 
+light_1_running = 0
+
 def decode_light(command):
     if command == "00":
         print("light off")
