@@ -3,6 +3,7 @@ from urllib.request import urlopen, Request
 import requests
 import json, time
 
+# variables initialization
 PIN = 21
 #GPIO.setmode(GPIO.BCM)
 #GPIO.setup(PIN, GPIO.OUT)
@@ -11,14 +12,42 @@ current_temperature_setting = 20
 wating_status = 0
 
 light_1_running = 0
+light_1_start = 0
+light_1_off = 0
+
+light_1_status = 0
+
+
+def open_light():
+    global light_1_start
+    global light_1_status
+    light_1_status = 1
+    #GPIO.output(PIN, GPIO.HIGH)
+    print("light on")
+    light_1_start = time.time()
+
+def close_light():
+    global light_1_running
+    global light_1_start
+    global light_1_off
+    global light_1_status
+    if light_1_status == 0:
+        print("light is already closed, do nothing")
+    else:
+        #GPIO.output(PIN, GPIO.LOW)
+        print("light off")
+        light_1_status = 0
+        light_1_off = time.time()
+        light_1_running += (light_1_off - light_1_start)
+        light_1_start = 0
+        light_1_off = 0
+        print('light #1\'s total on time is '  + str(round(light_1_running)) + ' seconds')
 
 def decode_light(command):
     if command == "00":
-        print("light off")
-        #GPIO.output(PIN, GPIO.LOW)
+        close_light()
     elif command == "01":
-        print("light on")
-        #GPIO.output(PIN, GPIO.HIGH)
+        open_light()
     else:
         print("invalid light instruction")
 
@@ -63,12 +92,6 @@ while True:
 
             elif command[0] == '1':
                 decode_ac(command[1:4])
-        #if command == '1':
-        #    print("light on")
-        #    #GPIO.output(PIN, GPIO.HIGH)
-        #elif command == '0':
-        #    print("light off")
-        #    #GPIO.output(PIN, GPIO.LOW)
 
             else:
                 print("invalid instruction")
